@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gomitohg/fasta"
 	"os"
 
 	"github.com/gobuffalo/packr"
@@ -14,6 +15,7 @@ func main() {
 	app.Name = "mitohg"
 	app.Usage = "make an explosive entrance"
 	app.Action = func(c *cli.Context) error {
+		muscle := getEnv("MUSCLE_BIN", "muscle")
 		box := packr.NewBox("./data")
 		rsrsFasta, err := box.FindString("RSRS.fa")
 		if err != nil {
@@ -23,6 +25,16 @@ func main() {
 		}
 
 		log.Info(rsrsFasta)
+		log.Info(muscle)
+
+		f, err := fasta.Read("./data/RSRS.fa")
+		if err != nil {
+			log.Error(err)
+
+			return err
+		}
+
+		log.Info(len(f[0].Sequence))
 
 		return nil
 	}
@@ -31,4 +43,11 @@ func main() {
 	if err != nil {
 		log.Error(err)
 	}
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
