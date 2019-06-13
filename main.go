@@ -13,34 +13,21 @@ func main() {
 	app.Name = "mitohg"
 	app.Usage = "make an explosive entrance"
 	app.Action = func(c *cli.Context) error {
-		log.WithFields(log.Fields{
-			"animal": "walrus",
-		}).Info("A walrus appears")
-
-		// set up a new box by giving it a (relative) path to a folder on disk:
-		box := packr.NewBox("./templates")
-
-		// Get the string representation of a file, or an error if it doesn't exist:
-		html, err := box.FindString("index.html")
+		box := packr.NewBox("./data")
+		rsrsFasta, err := box.FindString("RSRS.fa")
 		if err != nil {
-			log.WithFields(log.Fields{
-				"animal": "walrus",
-			}).Info("A walrus appears")
+			log.Error(err)
 
 			return err
 		}
 
-		log.WithFields(log.Fields{
-			"animal": "walrus",
-		}).Info(html)
+		log.Info(rsrsFasta)
 
 		return nil
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"animal": "walrus",
-		}).Info("A walrus appears")
+		log.Error(err)
 	}
 }
