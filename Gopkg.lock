@@ -98,6 +98,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/gobuffalo/packr",
+    "github.com/joho/godotenv",
     "github.com/sirupsen/logrus",
     "github.com/urfave/cli",
   ]
