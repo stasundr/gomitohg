@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:e47d51dab652d26c3fba6f8cba403f922d02757a82abdc77e90df7948daf296e"
+  name = "github.com/deckarep/golang-set"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cbaa98ba5575e67703b32b4b19f73c91f3c4159e"
+  version = "v1.7.1"
+
+[[projects]]
   digest = "1:d29ee5ef14a7e0253facd0bcebe6a69a7a4e02a67eb24d2aacd8ccb4a7cea6fc"
   name = "github.com/gobuffalo/envy"
   packages = ["."]
@@ -34,9 +42,12 @@
   revision = "33c29581e754bd354236e977dfe426e55331c45d"
 
 [[projects]]
-  digest = "1:ecd9aa82687cf31d1585d4ac61d0ba180e42e8a6182b85bd785fcca8dfeefc1b"
+  digest = "1:1f4b55d7c57681ad91b7ce3ac7c8e7b139e6dd2f477c5f87e6a7749d298645dc"
   name = "github.com/joho/godotenv"
-  packages = ["."]
+  packages = [
+    ".",
+    "autoload",
+  ]
   pruneopts = "UT"
   revision = "23d116af351c84513e1946b527c88823e476be13"
   version = "v1.3.0"
@@ -97,8 +108,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/deckarep/golang-set",
     "github.com/gobuffalo/packr",
-    "github.com/joho/godotenv",
+    "github.com/joho/godotenv/autoload",
     "github.com/sirupsen/logrus",
     "github.com/urfave/cli",
   ]

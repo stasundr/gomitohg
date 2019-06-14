@@ -34,7 +34,9 @@ func main() {
 			return err
 		}
 
-		log.Info(len(f[0].Sequence))
+		if len(f) > 0 {
+			log.Info(len(f[0].Sequence))
+		}
 
 		return nil
 	}
