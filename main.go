@@ -1,12 +1,12 @@
 package main
 
 import (
-	"gomitohg/fasta"
 	"os"
 
 	"github.com/gobuffalo/packr"
 	_ "github.com/joho/godotenv/autoload"
 	log "github.com/sirupsen/logrus"
+	"github.com/stasundr/gomitohg/fasta"
 	"github.com/urfave/cli"
 )
 
