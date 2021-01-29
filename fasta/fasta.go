@@ -1,7 +1,6 @@
 package fasta
 
 import (
-	"errors"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -31,8 +30,6 @@ func Read(r io.Reader) (Fasta, error) {
 		c := string(file[i])
 		if allowed.Contains(c) {
 			clean += c
-		} else {
-			return fasta, errors.New("FASTA: Unknown character")
 		}
 	}
 
