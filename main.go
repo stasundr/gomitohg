@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/gobuffalo/packr"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/markbates/pkger"
 	log "github.com/sirupsen/logrus"
 	"github.com/stasundr/gomitohg/fasta"
 	"github.com/urfave/cli"
@@ -13,21 +13,18 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "mitohg"
-	app.Usage = "make an explosive entrance"
+	app.Usage = "human mtDNA haplogroup classification tool"
 	app.Action = func(c *cli.Context) error {
 		muscle := getEnv("MUSCLE_BIN", "muscle")
-		box := packr.NewBox("./data")
-		rsrsFasta, err := box.FindString("RSRS.fa")
-		if err != nil {
-			log.Error(err)
-
-			return err
-		}
-
-		log.Info(rsrsFasta)
 		log.Info(muscle)
 
-		f, err := fasta.Read("./data/RSRS.fa")
+		rsrsf, err := pkger.Open("/data/RSRS.fa")
+		if err != nil {
+			return err
+		}
+		defer rsrsf.Close()
+
+		f, err := fasta.Read(rsrsf)
 		if err != nil {
 			log.Error(err)
 

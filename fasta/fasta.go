@@ -1,6 +1,8 @@
 package fasta
 
 import (
+	"errors"
+	"io"
 	"io/ioutil"
 	"strings"
 
@@ -14,11 +16,11 @@ type Record struct {
 
 type Fasta []Record
 
-func Read(filename string) (Fasta, error) {
+func Read(r io.Reader) (Fasta, error) {
 	allowed := mapset.NewSet("A", "a", "C", "c", "G", "g", "T", "t", "U", "u", "R", "r", "Y", "y", "K", "k", "M", "m", "S", "s", "W", "w", "B", "b", "D", "d", "H", "h", "V", "v", "N", "n", "-", ">", "\n", " ")
 	fasta := Fasta{}
 
-	file, err := ioutil.ReadFile(filename)
+	file, err := ioutil.ReadAll(r)
 	if err != nil {
 		return fasta, err
 	}
@@ -29,6 +31,8 @@ func Read(filename string) (Fasta, error) {
 		c := string(file[i])
 		if allowed.Contains(c) {
 			clean += c
+		} else {
+			return fasta, errors.New("FASTA: Unknown character")
 		}
 	}
 
