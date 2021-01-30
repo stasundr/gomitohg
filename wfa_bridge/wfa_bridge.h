@@ -1,2 +1,1 @@
-int align(char *reference, char *path);
-char *load_file(char const *path);
+const char *align(char *reference, char *path);

@@ -24,24 +24,23 @@ func Read(r io.Reader) (Fasta, error) {
 		return fasta, err
 	}
 
-	var clean string
-	l := len(file)
-	for i := 0; i < l; i++ {
-		c := string(file[i])
-		if allowed.Contains(c) {
-			clean += c
-		}
-	}
-
-	data := strings.Split(clean, ">")
-
+	data := strings.Split(string(file), ">")
 	for _, rawEntry := range data[1:] {
 		entry := strings.Split(rawEntry, "\n")
-		record := Record{
-			Name:     entry[0],
-			Sequence: strings.Join(entry[1:], ""),
+		var sequence string
+		s := strings.Join(entry[1:], "")
+		l := len(s)
+		for i := 0; i < l; i++ {
+			c := string(s[i])
+			if allowed.Contains(c) {
+				sequence += c
+			}
 		}
 
+		record := Record{
+			Name:     entry[0],
+			Sequence: sequence,
+		}
 		fasta = append(fasta, record)
 	}
 

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"unsafe"
 
+	mapset "github.com/deckarep/golang-set"
 	"github.com/markbates/pkger"
 	log "github.com/sirupsen/logrus"
 	"github.com/stasundr/gomitohg/fasta"
@@ -12,13 +14,12 @@ import (
 )
 
 // #cgo CFLAGS: -Iwfa_bridge -I../WFA/gap_affine
-// #cgo LDFLAGS: -Lwfa_bridge -lwfabridge -L../WFA/build -lwfa
+// #cgo LDFLAGS: -Lwfa_bridge -lwfabridge -L../WFA/build -lwfa -ljson-c
 // #include <stdlib.h>
 // #include <wfa_bridge/wfa_bridge.h>
 import "C"
 
 func main() {
-
 	app := cli.NewApp()
 	app.Name = "mitohg"
 	app.Usage = "human mtDNA haplogroup classification tool"
@@ -41,35 +42,123 @@ func main() {
 			return nil
 		}
 
-		rsrsf, err := pkger.Open("/data/RSRS.fa")
+		reff, err := pkger.Open("/data/RSRS.fa")
 		if err != nil {
 			return err
 		}
-		defer rsrsf.Close()
+		defer reff.Close()
 
-		r, err := fasta.Read(rsrsf)
-		if err != nil {
-			return err
-		}
-
-		sf, err := os.Open(c.String("input"))
-		if err != nil {
-			return err
-		}
-		defer sf.Close()
-
-		s, err := fasta.Read(sf)
+		ref, err := fasta.Read(reff)
 		if err != nil {
 			return err
 		}
 
-		reference := C.CString(r[0].Sequence)
+		seqf, err := os.Open(c.String("input"))
+		if err != nil {
+			return err
+		}
+		defer seqf.Close()
+
+		seq, err := fasta.Read(seqf)
+		if err != nil {
+			return err
+		}
+
+		reference := C.CString(ref[0].Sequence)
 		defer C.free(unsafe.Pointer(reference))
 
-		sequence := C.CString(s[0].Sequence)
+		sequence := C.CString(seq[0].Sequence)
 		defer C.free(unsafe.Pointer(sequence))
 
-		fmt.Println(C.align(reference, sequence))
+		var wfa struct {
+			Reference string `json:"pattern_alg"`
+			Sequence  string `json:"text_alg"`
+			Ops       string `json:"ops_alg"`
+			Score     int    `json:"score"`
+		}
+		err = json.Unmarshal([]byte(C.GoString(C.align(reference, sequence))), &wfa)
+		if err != nil {
+			log.Error(err)
+		}
+
+		var position, insertionPosition int
+		var currentInsertion string
+		mutations := mapset.NewSet()
+		for i := 0; i < len(wfa.Reference); i++ {
+			r := wfa.Reference[i]
+			s := wfa.Sequence[i]
+
+			if s == '-' {
+				position++
+				if r != 'N' {
+					mutations.Add(`${r}${position}D`)
+				}
+			} else if r == '-' {
+				if currentInsertion == "" {
+					insertionPosition = i
+				}
+				currentInsertion += string(s)
+			} else {
+				if currentInsertion != "" {
+					relativeIndex := 1
+					if currentInsertion[0] != wfa.Reference[insertionPosition+1] {
+						relativeIndex = 2
+					}
+					ins := fmt.Sprintf("%d.%d%s", insertionPosition, relativeIndex, currentInsertion)
+					mutations.Add(ins)
+					currentInsertion = ""
+				}
+				position++
+
+				if r != s {
+					switch s {
+					case 'M':
+						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
+					case 'R':
+						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
+					case 'W':
+						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
+					case 'S':
+						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
+					case 'Y':
+						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
+					case 'K':
+						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
+					case 'V':
+						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
+					case 'H':
+						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
+					case 'D':
+						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
+					case 'B':
+						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
+					case 'X':
+						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
+						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
+					default:
+						mutations.Add(fmt.Sprintf("%s%d%s", string(r), position, string(s)))
+					}
+				}
+			}
+		}
+
+		log.Info(mutations, insertionPosition)
 
 		return nil
 	}
