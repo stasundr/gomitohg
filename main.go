@@ -1,8 +1,10 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"unsafe"
 
@@ -40,6 +42,29 @@ func main() {
 		if os.IsNotExist(err) {
 			log.Warn("File does not exist")
 			return nil
+		}
+
+		phylotreef, err := pkger.Open("/data/phylotree17.json.gz")
+		if err != nil {
+			return err
+		}
+		defer phylotreef.Close()
+		phylotreer, err := gzip.NewReader(phylotreef)
+		if err != nil {
+			return err
+		}
+		phylotreeb, err := ioutil.ReadAll(phylotreer)
+		if err != nil {
+			return err
+		}
+
+		var phylotree []struct {
+			Haplogroup string   `json:"haplogroup"`
+			Haplotype  []string `json:"haplotype"`
+		}
+		err = json.Unmarshal(phylotreeb, &phylotree)
+		if err != nil {
+			return err
 		}
 
 		reff, err := pkger.Open("/data/RSRS.fa")
@@ -158,7 +183,23 @@ func main() {
 			}
 		}
 
-		log.Info(mutations, insertionPosition)
+		var resultHg string
+		resultScore := 100000
+		for _, hg := range phylotree {
+			hgMutations := mapset.NewSet()
+			for _, m := range hg.Haplotype {
+				hgMutations.Add(m)
+			}
+			intersection := mutations.Intersect(hgMutations)
+			union := mutations.Union(hgMutations)
+			score := len(union.ToSlice()) - len(intersection.ToSlice())
+			if resultScore > score {
+				resultScore = score
+				resultHg = hg.Haplogroup
+			}
+		}
+
+		log.Info(resultHg)
 
 		return nil
 	}
