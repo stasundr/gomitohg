@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"unsafe"
@@ -12,7 +13,7 @@ import (
 )
 
 // #cgo CFLAGS: -Iwfa_bridge -I../WFA/gap_affine
-// #cgo LDFLAGS: -Lwfa_bridge -lwfabridge -L../WFA/build -lwfa
+// #cgo LDFLAGS: -Lwfa_bridge -lwfabridge -L../WFA/build -lwfa -ljson-c
 // #include <stdlib.h>
 // #include <wfa_bridge/wfa_bridge.h>
 import "C"
@@ -68,7 +69,18 @@ func main() {
 		sequence := C.CString(s[0].Sequence)
 		defer C.free(unsafe.Pointer(sequence))
 
-		fmt.Println(C.GoString(C.align(reference, sequence)))
+		var wfa struct {
+			Reference string `json:"pattern_alg"`
+			Sequence  string `json:"text_alg"`
+			Ops       string `json:"ops_alg"`
+			Score     int    `json:"score"`
+		}
+		err = json.Unmarshal([]byte(C.GoString(C.align(reference, sequence))), &wfa)
+		if err != nil {
+			log.Error(err)
+		}
+
+		fmt.Println(wfa.Score)
 
 		return nil
 	}

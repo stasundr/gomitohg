@@ -1,1 +1,1 @@
-char *align(char *reference, char *path);
+const char *align(char *reference, char *path);
