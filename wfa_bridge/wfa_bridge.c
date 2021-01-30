@@ -1,32 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "gap_affine/affine_wavefront_align.h"
 
-char *load_file(char const *path)
-{
-  char *buffer = 0;
-  long length;
-  FILE *f = fopen(path, "rb");
-
-  if (f)
-  {
-    fseek(f, 0, SEEK_END);
-    length = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    buffer = (char *)malloc((length + 1) * sizeof(char));
-    if (buffer)
-    {
-      fread(buffer, sizeof(char), length, f);
-    }
-    fclose(f);
-  }
-  buffer[length] = '\0';
-
-  return buffer;
-}
-
-int align(char *reference, char *sequence)
+char *align(char *reference, char *sequence)
 {
   // Allocate MM
   mm_allocator_t *const mm_allocator = mm_allocator_new(BUFFER_SIZE_8M);
@@ -54,5 +28,5 @@ int align(char *reference, char *sequence)
   affine_wavefronts_delete(affine_wavefronts);
   mm_allocator_delete(mm_allocator);
 
-  return 0;
+  return "res";
 }

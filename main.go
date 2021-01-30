@@ -18,7 +18,6 @@ import (
 import "C"
 
 func main() {
-
 	app := cli.NewApp()
 	app.Name = "mitohg"
 	app.Usage = "human mtDNA haplogroup classification tool"
@@ -69,7 +68,7 @@ func main() {
 		sequence := C.CString(s[0].Sequence)
 		defer C.free(unsafe.Pointer(sequence))
 
-		fmt.Println(C.align(reference, sequence))
+		fmt.Println(C.GoString(C.align(reference, sequence)))
 
 		return nil
 	}
