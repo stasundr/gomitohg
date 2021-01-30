@@ -8,7 +8,7 @@ import (
 	"github.com/markbates/pkger"
 	log "github.com/sirupsen/logrus"
 	"github.com/stasundr/gomitohg/fasta"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // #cgo CFLAGS: -Iwfa_bridge -I../WFA/gap_affine
@@ -22,7 +22,25 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "mitohg"
 	app.Usage = "human mtDNA haplogroup classification tool"
+	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:    "input",
+			Aliases: []string{"i"},
+			Value:   "",
+			Usage:   "Input fasta `FILE`",
+		},
+	}
 	app.Action = func(c *cli.Context) error {
+		if c.String("input") == "" {
+			log.Warn("No input fasta")
+			return nil
+		}
+		_, err := os.Stat(c.String("input"))
+		if os.IsNotExist(err) {
+			log.Warn("File does not exist")
+			return nil
+		}
+
 		rsrsf, err := pkger.Open("/data/RSRS.fa")
 		if err != nil {
 			return err
@@ -34,7 +52,7 @@ func main() {
 			return err
 		}
 
-		sf, err := os.Open("/Users/me/dev/mtget/dryomov2015/KF874328.1_Chaedn23.fasta")
+		sf, err := os.Open(c.String("input"))
 		if err != nil {
 			return err
 		}
@@ -47,8 +65,6 @@ func main() {
 
 		reference := C.CString(r[0].Sequence)
 		defer C.free(unsafe.Pointer(reference))
-
-		log.Info(s[0].Name)
 
 		sequence := C.CString(s[0].Sequence)
 		defer C.free(unsafe.Pointer(sequence))

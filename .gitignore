@@ -1,2 +1,5 @@
 .DS_Store
 .env
+
+wfa_bridge/*.a
+wfa_bridge/*.o
