@@ -6,20 +6,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"unsafe"
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/markbates/pkger"
 	log "github.com/sirupsen/logrus"
+	wfa "github.com/stasundr/gomitohg/bridge"
 	"github.com/stasundr/gomitohg/fasta"
 	"github.com/urfave/cli/v2"
 )
-
-// #cgo CFLAGS: -Iwfa_bridge -I../WFA/gap_affine
-// #cgo LDFLAGS: -Lwfa_bridge -lwfabridge -L../WFA/build -lwfa -ljson-c
-// #include <stdlib.h>
-// #include <wfa_bridge/wfa_bridge.h>
-import "C"
 
 func main() {
 	app := cli.NewApp()
@@ -89,29 +83,17 @@ func main() {
 			return err
 		}
 
-		reference := C.CString(ref[0].Sequence)
-		defer C.free(unsafe.Pointer(reference))
-
-		sequence := C.CString(seq[0].Sequence)
-		defer C.free(unsafe.Pointer(sequence))
-
-		var wfa struct {
-			Reference string `json:"pattern_alg"`
-			Sequence  string `json:"text_alg"`
-			Ops       string `json:"ops_alg"`
-			Score     int    `json:"score"`
-		}
-		err = json.Unmarshal([]byte(C.GoString(C.align(reference, sequence))), &wfa)
+		alignment, err := wfa.AffineWaveformAlign(ref[0].Sequence, seq[0].Sequence)
 		if err != nil {
-			log.Error(err)
+			return err
 		}
 
 		var position, insertionPosition int
 		var currentInsertion string
 		mutations := mapset.NewSet()
-		for i := 0; i < len(wfa.Reference); i++ {
-			r := wfa.Reference[i]
-			s := wfa.Sequence[i]
+		for i := 0; i < len(alignment.Reference); i++ {
+			r := alignment.Reference[i]
+			s := alignment.Sequence[i]
 
 			if s == '-' {
 				position++
@@ -126,7 +108,7 @@ func main() {
 			} else {
 				if currentInsertion != "" {
 					relativeIndex := 1
-					if currentInsertion[0] != wfa.Reference[insertionPosition+1] {
+					if currentInsertion[0] != alignment.Reference[insertionPosition+1] {
 						relativeIndex = 2
 					}
 					ins := fmt.Sprintf("%d.%d%s", insertionPosition, relativeIndex, currentInsertion)
