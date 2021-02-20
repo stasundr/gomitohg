@@ -6,11 +6,8 @@
 
 ## Build
 
-```
-cd wfa_bridge
-gcc -O2 -I/path/to/WFA -c wfa_bridge.c
-ar q libwfabridge.a wfa_bridge.o
+See `Dockerfile` for build details.
 
-cd ..
-go build -o mitohg
+```
+docker build -t mitohg .
 ```

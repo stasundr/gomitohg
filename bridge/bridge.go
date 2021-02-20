@@ -1,7 +1,7 @@
 package bridge
 
-// #cgo CFLAGS: -I. -I/Users/me/dev/WFA
-// #cgo LDFLAGS: -L. -lwfabridge -L/Users/me/dev/WFA/build -lwfa -ljson-c
+// #cgo CFLAGS: -I. -I../WFA
+// #cgo LDFLAGS: -L. -lwfabridge -L../WFA/build -lwfa -ljson-c
 // #include <stdlib.h>
 // #include <wfa_bridge.h>
 import "C"

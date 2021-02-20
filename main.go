@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/markbates/pkger"
-	log "github.com/sirupsen/logrus"
 	wfa "github.com/stasundr/gomitohg/bridge"
 	"github.com/stasundr/gomitohg/fasta"
 	"github.com/urfave/cli/v2"
@@ -29,12 +29,12 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) error {
 		if c.String("input") == "" {
-			log.Warn("No input fasta")
+			log.Println("No input fasta")
 			return nil
 		}
 		_, err := os.Stat(c.String("input"))
 		if os.IsNotExist(err) {
-			log.Warn("File does not exist")
+			log.Println("File does not exist")
 			return nil
 		}
 
@@ -181,13 +181,13 @@ func main() {
 			}
 		}
 
-		log.Info(resultHg)
+		fmt.Println(resultHg)
 
 		return nil
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Error(err)
+		log.Println(err.Error())
 	}
 }
