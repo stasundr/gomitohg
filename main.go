@@ -2,18 +2,25 @@ package main
 
 import (
 	"compress/gzip"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/markbates/pkger"
 	wfa "github.com/stasundr/gomitohg/bridge"
 	"github.com/stasundr/gomitohg/fasta"
 	"github.com/urfave/cli/v2"
 )
+
+//go:embed data/RSRS.fa
+var rsrs string
+
+//go:embed data/phylotree17.json.gz
+var phylotree string
 
 func main() {
 	app := cli.NewApp()
@@ -38,11 +45,7 @@ func main() {
 			return nil
 		}
 
-		phylotreef, err := pkger.Open("/data/phylotree17.json.gz")
-		if err != nil {
-			return err
-		}
-		defer phylotreef.Close()
+		phylotreef := strings.NewReader(phylotree)
 		phylotreer, err := gzip.NewReader(phylotreef)
 		if err != nil {
 			return err
@@ -61,12 +64,7 @@ func main() {
 			return err
 		}
 
-		reff, err := pkger.Open("/data/RSRS.fa")
-		if err != nil {
-			return err
-		}
-		defer reff.Close()
-
+		reff := strings.NewReader(rsrs)
 		ref, err := fasta.Read(reff)
 		if err != nil {
 			return err
