@@ -81,7 +81,6 @@ struct json_object *edit_cigar_json(
     ops_alg[alg_pos + i] = '?';
     ++i;
   }
-  // edit_cigar_print(stderr, edit_cigar);
 
   // Free
   mm_allocator_free(mm_allocator, pattern_alg);
@@ -93,6 +92,35 @@ struct json_object *edit_cigar_json(
   json_object_object_add(jobj, "pattern_alg", json_object_new_string(pattern_alg));
   json_object_object_add(jobj, "ops_alg", json_object_new_string(ops_alg));
   json_object_object_add(jobj, "text_alg", json_object_new_string(text_alg));
+
+  // edit_cigar_print(stderr, edit_cigar);
+  struct json_object *jopsn, *jopsc;
+  jopsn = json_object_new_array();
+  jopsc = json_object_new_array();
+
+  char last_op = edit_cigar->operations[edit_cigar->begin_offset];
+  int last_op_length = 1;
+  i = 0;
+  for (i = edit_cigar->begin_offset + 1; i < edit_cigar->end_offset; ++i)
+  {
+    if (edit_cigar->operations[i] == last_op)
+    {
+      ++last_op_length;
+    }
+    else
+    {
+      // fprintf(stream, "%d%c", last_op_length, last_op);
+      json_object_array_add(jopsn, json_object_new_int(last_op_length));
+      json_object_array_add(jopsc, json_object_new_int(last_op));
+      last_op = edit_cigar->operations[i];
+      last_op_length = 1;
+    }
+  }
+  // fprintf(stream, "%d%c", last_op_length, last_op);
+  json_object_array_add(jopsn, json_object_new_int(last_op_length));
+  json_object_array_add(jopsc, json_object_new_int(last_op));
+  json_object_object_add(jobj, "opsn", jopsn);
+  json_object_object_add(jobj, "opsc", jopsc);
 
   return jobj;
 }

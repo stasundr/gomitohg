@@ -15,6 +15,8 @@ type Alignment struct {
 	Sequence  string `json:"text_alg"`
 	Ops       string `json:"ops_alg"`
 	Score     int    `json:"score"`
+	Opsn      []int  `json:"opsn"`
+	Opsc      []byte `json:"opsc"`
 }
 
 func AffineWaveformAlign(sequenceA string, sequenceB string) (Alignment, error) {

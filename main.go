@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 
 	mapset "github.com/deckarep/golang-set"
@@ -86,84 +89,32 @@ func main() {
 			return err
 		}
 
-		var position, insertionPosition int
-		var currentInsertion string
 		mutations := mapset.NewSet()
-		for i := 0; i < len(alignment.Reference); i++ {
-			r := alignment.Reference[i]
-			s := alignment.Sequence[i]
+		cigarLen := len(alignment.Opsc)
+		refPos := 0
+		seqPos := 0
+		for i := 0; i < cigarLen; i++ {
+			if alignment.Opsc[i] != 'D' {
+				seqPos += alignment.Opsn[i]
+			}
+			if alignment.Opsc[i] != 'I' {
+				refPos += alignment.Opsn[i]
+			}
 
-			if s == '-' {
-				position++
-				if r != 'N' {
-					mutations.Add(`${r}${position}D`)
-				}
-			} else if r == '-' {
-				if currentInsertion == "" {
-					insertionPosition = i
-				}
-				currentInsertion += string(s)
-			} else {
-				if currentInsertion != "" {
-					relativeIndex := 1
-					if currentInsertion[0] != alignment.Reference[insertionPosition+1] {
-						relativeIndex = 2
-					}
-					ins := fmt.Sprintf("%d.%d%s", insertionPosition, relativeIndex, currentInsertion)
-					mutations.Add(ins)
-					currentInsertion = ""
-				}
-				position++
-
-				if r != s {
-					switch s {
-					case 'M':
-						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
-					case 'R':
-						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
-					case 'W':
-						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
-					case 'S':
-						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
-					case 'Y':
-						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
-					case 'K':
-						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
-					case 'V':
-						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
-					case 'H':
-						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
-					case 'D':
-						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
-					case 'B':
-						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
-					case 'X':
-						mutations.Add(fmt.Sprintf("%s%dA", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dC", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dG", string(r), position))
-						mutations.Add(fmt.Sprintf("%s%dT", string(r), position))
-					default:
-						mutations.Add(fmt.Sprintf("%s%d%s", string(r), position, string(s)))
-					}
+			// TODO: handle X D I
+			switch alignment.Opsc[i] {
+			case 'X':
+				refL := string(ref[0].Sequence[refPos-1])
+				seqL := string(seq[0].Sequence[seqPos-1])
+				if refL != seqL && refL != "N" {
+					// TODO: handle alphabet
+					mutations.Add(fmt.Sprintf("%s%d%s", refL, refPos, seqL))
 				}
 			}
 		}
 
 		var resultHg string
+		resultHgMutations := mapset.NewSet()
 		resultScore := 100000
 		for _, hg := range phylotree {
 			hgMutations := mapset.NewSet()
@@ -176,10 +127,22 @@ func main() {
 			if resultScore > score {
 				resultScore = score
 				resultHg = hg.Haplogroup
+				resultHgMutations = hgMutations.Clone()
 			}
 		}
 
-		fmt.Println(resultHg)
+		re := regexp.MustCompile(`\d+`)
+		var tail string
+		ms := mutations.Difference(resultHgMutations).ToSlice()
+		sort.SliceStable(ms, func(i, j int) bool {
+			pi, _ := strconv.Atoi(re.FindString(ms[i].(string)))
+			pj, _ := strconv.Atoi(re.FindString(ms[j].(string)))
+			return pi < pj
+		})
+		for _, m := range ms {
+			tail += " " + m.(string)
+		}
+		fmt.Println(resultHg + tail)
 
 		return nil
 	}
